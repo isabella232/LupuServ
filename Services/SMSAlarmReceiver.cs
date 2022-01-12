@@ -9,6 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace LupuServ.Services
 {
+    /// <summary>
+    ///     An <see cref="IAlarmReceiver"/> that sens mobile carrier messages (SMS).
+    /// </summary>
     internal class SmsAlarmReceiver : IAlarmReceiver
     {
         private readonly IConfiguration _config;
@@ -41,7 +44,7 @@ namespace LupuServ.Services
             if (result.statusCode == TextClientStatusCode.Ok)
             {
                 _logger.LogInformation(
-                    $"Successfully sent the following message to recipients: {message.ToString()}");
+                    $"Successfully sent the following message to recipients: {message}");
 
                 return;
             }

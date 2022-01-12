@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using LupuServ.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Tiny.RestClient;
 
 namespace LupuServ
 {
@@ -26,6 +29,13 @@ namespace LupuServ
                 .UseSystemd()
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddScoped(provider =>
+                    {
+                        var endpoint = provider.GetRequiredService<IConfiguration>().GetSection("Gotify:Url").Value;
+                        
+                        return new TinyRestClient(new HttpClient(), endpoint);
+                    });
+
                     services.AddScoped<IStatusReceiver, GotifyStatusReceiver>();
                     services.AddScoped<IAlarmReceiver, SmsAlarmReceiver>();
                     services.AddScoped<IAlarmReceiver, GotifyAlarmReceiver>();

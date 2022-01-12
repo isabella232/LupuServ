@@ -18,9 +18,9 @@ namespace LupuServ.Services
             _logger = logger;
         }
 
-        public Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
+        public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+
         }
     }
 }
