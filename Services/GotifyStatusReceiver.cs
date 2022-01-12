@@ -25,6 +25,8 @@ namespace LupuServ.Services
 
         public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Processing message to deliver via Gotify");
+
             var token = _config.GetSection("Gotify:Status:AppToken").Value;
 
             var request = await _restClient.PostRequest($"/message?token{token}")
