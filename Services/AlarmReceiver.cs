@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Threading;
+using LupuServ.Util;
 using System.Threading.Tasks;
 
 namespace LupuServ.Services
 {
     internal interface IAlarmReceiver
     {
-
-    }
-
-    internal class AlarmReceiver : IAlarmReceiver
-    {
+        Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default);
     }
 }

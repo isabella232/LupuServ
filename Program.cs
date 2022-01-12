@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using LupuServ.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -23,7 +24,14 @@ namespace LupuServ
         {
             return Host.CreateDefaultBuilder(args)
                 .UseSystemd()
-                .ConfigureServices((hostContext, services) => { services.AddHostedService<Worker>(); });
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddScoped<IStatusReceiver, GotifyStatusReceiver>();
+                    services.AddScoped<IAlarmReceiver, SmsAlarmReceiver>();
+                    services.AddScoped<IAlarmReceiver, GotifyAlarmReceiver>();
+
+                    services.AddHostedService<Worker>();
+                });
         }
     }
 }

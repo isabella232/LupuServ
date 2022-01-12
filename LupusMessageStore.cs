@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CM.Text;
+using LupuServ.Services;
+using LupuServ.Util;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SmtpServer;
 using SmtpServer.Protocol;
@@ -13,31 +15,35 @@ using SmtpServer.Storage;
 
 namespace LupuServ
 {
+    /// <summary>
+    ///     Handles incoming SMTP messages.
+    /// </summary>
     public class LupusMessageStore : MessageStore
     {
-        public LupusMessageStore(IConfiguration config, ILogger<Worker> logger)
+        public LupusMessageStore(IConfiguration config, ILogger<Worker> logger, IServiceScopeFactory scopeFactory)
         {
-            Config = config;
-            Logger = logger;
+            _config = config;
+            _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
-        public IConfiguration Config { get; }
+        private readonly IConfiguration _config;
 
-        public ILogger<Worker> Logger { get; }
+        private readonly ILogger<Worker> _logger;
 
-        public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer,
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction,
+            ReadOnlySequence<byte> buffer,
             CancellationToken cancellationToken)
         {
-            var statusUser = Config.GetSection("StatusUser").Value;
-            var alarmUser = Config.GetSection("AlarmUser").Value;
-            
+            var statusUser = _config.GetSection("StatusUser").Value;
+            var alarmUser = _config.GetSection("AlarmUser").Value;
+
             await using var stream = new MemoryStream();
 
             var position = buffer.GetPosition(0);
-            while (buffer.TryGet(ref position, out var memory))
-            {
-                await stream.WriteAsync(memory, cancellationToken);
-            }
+            while (buffer.TryGet(ref position, out var memory)) await stream.WriteAsync(memory, cancellationToken);
 
             stream.Position = 0;
 
@@ -46,44 +52,47 @@ namespace LupuServ
             var user = transaction.To.First().User;
 
             //
-            // Send SMS in alert event only
+            // Call Alarm handlers
             // 
             if (user.Equals(alarmUser, StringComparison.InvariantCultureIgnoreCase))
             {
-                Logger.LogInformation("Received alarm event");
+                _logger.LogInformation("Received alarm event");
 
-                var apiKey = Guid.Parse(Config.GetSection("ApiKey").Value);
+                var template = _config.GetSection("Templates:Alarm").Value;
 
-                var from = Config.GetSection("From").Value;
+                using var scope = _scopeFactory.CreateScope();
 
-                var recipients = Config.GetSection("Recipients").GetChildren().Select(e => e.Value).ToList();
-
-                Logger.LogInformation(
-                    $"Will send alarm SMS to the following recipients: {string.Join(", ", recipients)}");
-
-                var client = new TextClient(apiKey);
-
-                var result = await client
-                    .SendMessageAsync(message.TextBody, from, recipients, transaction.From.User, cancellationToken)
-                    .ConfigureAwait(false);
-
-                if (result.statusCode == TextClientStatusCode.Ok)
-                {
-                    Logger.LogInformation($"Successfully sent the following message to recipients: {message.TextBody}");
-
-                    return SmtpResponse.Ok;
-                }
-
-                Logger.LogError($"Message delivery failed: {result.statusMessage} ({result.statusCode})");
-
-                return SmtpResponse.TransactionFailed;
+                foreach (var receiver in scope.ServiceProvider.GetServices<IAlarmReceiver>())
+                    await receiver.ProcessMessageAsync(MessagePacket.DecodeFrom(message.TextBody, template),
+                        cancellationToken);
             }
 
+            //
+            // Call Status handlers
+            // 
             if (user.Equals(statusUser, StringComparison.InvariantCultureIgnoreCase))
-                Logger.LogInformation($"Received status change: {message.TextBody}");
-            else
-                Logger.LogWarning($"Unknown message received (maybe a test?): {message.TextBody}");
+            {
+                _logger.LogInformation($"Received status change: {message.TextBody}");
 
+                var template = _config.GetSection("Templates:Status").Value;
+
+                using var scope = _scopeFactory.CreateScope();
+
+                foreach (var receiver in scope.ServiceProvider.GetServices<IStatusReceiver>())
+                    await receiver.ProcessMessageAsync(MessagePacket.DecodeFrom(message.TextBody, template),
+                        cancellationToken);
+            }
+            //
+            // Anything unknown goes into the logs
+            // 
+            else
+            {
+                _logger.LogWarning($"Unknown message received (maybe a test?): {message.TextBody}");
+            }
+
+            //
+            // There isn't really any benefit to report an error back to the station
+            // 
             return SmtpResponse.Ok;
         }
     }

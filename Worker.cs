@@ -2,10 +2,11 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SmtpServer;
-using SmtpServer.ComponentModel;
+using ServiceProvider = SmtpServer.ComponentModel.ServiceProvider;
 
 namespace LupuServ
 {
@@ -13,9 +14,12 @@ namespace LupuServ
     {
         private readonly ILogger<Worker> _logger;
 
-        public Worker(ILogger<Worker> logger)
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,7 +36,7 @@ namespace LupuServ
                 var port = int.Parse(config.GetSection("Port").Value);
 
                 var serviceProvider = new ServiceProvider();
-                serviceProvider.Add(new LupusMessageStore(config, _logger));
+                serviceProvider.Add(new LupusMessageStore(config, _logger, _scopeFactory));
 
                 var options = new SmtpServerOptionsBuilder()
                     .ServerName("localhost")
