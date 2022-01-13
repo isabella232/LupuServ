@@ -26,30 +26,37 @@ namespace LupuServ.Services
 
         public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
         {
-            var apiKey = Guid.Parse(_config.GetSection("ApiKey").Value);
-
-            var from = _config.GetSection("From").Value;
-
-            var recipients = _config.GetSection("Recipients").GetChildren().Select(e => e.Value).ToList();
-
-            _logger.LogInformation(
-                $"Will send alarm SMS to the following recipients: {string.Join(", ", recipients)}");
-
-            var client = new TextClient(apiKey);
-
-            var result = await client
-                .SendMessageAsync(message.ToString(), from, recipients, "Alarm", cancellationToken)
-                .ConfigureAwait(false);
-
-            if (result.statusCode == TextClientStatusCode.Ok)
+            try
             {
+                var apiKey = Guid.Parse(_config.GetSection("ApiKey").Value);
+
+                var from = _config.GetSection("From").Value;
+
+                var recipients = _config.GetSection("Recipients").GetChildren().Select(e => e.Value).ToList();
+
                 _logger.LogInformation(
-                    $"Successfully sent the following message to recipients: {message}");
+                    $"Will send alarm SMS to the following recipients: {string.Join(", ", recipients)}");
 
-                return;
+                var client = new TextClient(apiKey);
+
+                var result = await client
+                    .SendMessageAsync(message.ToString(), from, recipients, "Alarm", cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (result.statusCode == TextClientStatusCode.Ok)
+                {
+                    _logger.LogInformation(
+                        $"Successfully sent the following message to recipients: {message}");
+
+                    return;
+                }
+
+                _logger.LogError($"Message delivery failed: {result.statusMessage} ({result.statusCode})");
             }
-
-            _logger.LogError($"Message delivery failed: {result.statusMessage} ({result.statusCode})");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to deliver status message");
+            }
         }
     }
 }
