@@ -26,7 +26,6 @@ namespace LupuServ
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
             return Host.CreateDefaultBuilder(args)
-                .UseSystemd()
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddScoped(provider =>
