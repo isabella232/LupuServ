@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using LupuServ.Util;
 using Microsoft.Extensions.Configuration;
@@ -27,15 +28,22 @@ namespace LupuServ.Services
         {
             _logger.LogInformation("Processing message to deliver via Gotify");
 
-            var token = _config.GetSection("Gotify:Status:AppToken").Value;
+            try
+            {
+                var token = _config.GetSection("Gotify:Status:AppToken").Value;
 
-            var request = await _restClient.PostRequest($"/message?token{token}")
-                .AddFormParameter("priority", "1")
-                .AddFormParameter("title", "Status Update")
-                .AddFormParameter("message", message.ToString())
-                .ExecuteAsync<GotifyResponse>(cancellationToken);
+                var request = await _restClient.PostRequest($"/message?token{token}")
+                    .AddFormParameter("priority", "1")
+                    .AddFormParameter("title", "Status Update")
+                    .AddFormParameter("message", message.ToString())
+                    .ExecuteAsync<GotifyResponse>(cancellationToken);
 
-            _logger.LogInformation("Request result: {0}", request);
+                _logger.LogInformation("Request result: {0}", request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to deliver status message");
+            }
         }
     }
 }
