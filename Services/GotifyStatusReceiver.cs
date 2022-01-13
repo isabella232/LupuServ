@@ -32,7 +32,7 @@ namespace LupuServ.Services
             {
                 var token = _config.GetSection("Gotify:Status:AppToken").Value;
 
-                var request = await _restClient.PostRequest($"message?token{token}")
+                var request = await _restClient.PostRequest($"message?token={token}")
                     .AddFormParameter("priority", "1")
                     .AddFormParameter("title", "Status Update")
                     .AddFormParameter("message", message.ToString())
