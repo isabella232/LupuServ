@@ -65,6 +65,8 @@ namespace LupuServ
                 foreach (var receiver in scope.ServiceProvider.GetServices<IAlarmReceiver>())
                     await receiver.ProcessMessageAsync(MessagePacket.DecodeFrom(message.TextBody, template),
                         cancellationToken);
+
+                return SmtpResponse.Ok;
             }
 
             //
@@ -81,6 +83,8 @@ namespace LupuServ
                 foreach (var receiver in scope.ServiceProvider.GetServices<IStatusReceiver>())
                     await receiver.ProcessMessageAsync(MessagePacket.DecodeFrom(message.TextBody, template),
                         cancellationToken);
+
+                return SmtpResponse.Ok;
             }
             //
             // Anything unknown goes into the logs
