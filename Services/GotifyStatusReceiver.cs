@@ -31,10 +31,12 @@ namespace LupuServ.Services
             try
             {
                 var token = _config.GetSection("Gotify:Status:AppToken").Value;
+                var title = _config.GetSection("Gotify:Status:Title").Value;
+                var priority = _config.GetSection("Gotify:Status:Priority").Value;
 
                 var request = await _restClient.PostRequest($"message?token={token}")
-                    .AddFormParameter("priority", "1")
-                    .AddFormParameter("title", "Status Update")
+                    .AddFormParameter("priority", priority)
+                    .AddFormParameter("title", title)
                     .AddFormParameter("message", message.ToString())
                     .ExecuteAsync<GotifyResponse>(cancellationToken);
 
