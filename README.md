@@ -1,6 +1,6 @@
 # LupuServ
 
-E-Mail to SMS Gateway service for Lupusec XT1 alarm system
+E-Mail to SMS Gateway (and [Gotify](https://gotify.net/)) service for Lupusec XT1 alarm system
 
 ## Motivation
 
@@ -8,11 +8,11 @@ I happened to know an owner of the very early central alarm system Lupusec XT1 f
 
 The system offers a few methods of notifying the outside world about an alarm event, the one in question being able to send a classic SMS message to a maximum of two phone numbers. APIs tend to change or become deprecated, and without firmware updates there isn't much one can do. Which is exactly what happened here; the SMS gateway implementation broke and thanks to this thing not provide any logs or sources, who knows why. This leaves us with a few different channels to grab events from: Contact-ID - which I have no idea what that is and what to do with it - and E-Mail.
 
-I decided to abuse the E-Mail functionality to receive alarm (and status change) events by faking an SMTP-Server, which in turn transforms the mail body and sends it to an SMS gateway in proxy. The application uses .NET 5.0 and is designed as a Worker compatible with Docker, so it should run on any supported Linux system.
+I decided to abuse the E-Mail functionality to receive alarm (and status change) events by faking an SMTP-Server, which in turn transforms the mail body and sends it to an SMS gateway (or Gotify server) in proxy. The application uses .NET 5.0 and is designed as a Worker compatible with Docker, so it should run on any supported Linux system.
 
 ## Supported Systems
 
-The solution has been developed for and tested with the Lupusec XT1 (**not** Plus!) central station running Firmware version **1.0.89** and LupuServ hosted on a Raspberry Pi 2 Model B Rev 1.1 (ARM32). The only SMS gateway provider implemented is [CM.com](https://www.cm.com/about-cm/) so you need a registered account and a minimum balance required for the Messaging gateway channel.
+The solution has been developed for and tested with the Lupusec XT1 (**not** Plus!) central station running Firmware version **1.0.89** and LupuServ hosted on a Raspberry Pi 2 Model B Rev 1.1 (ARM32). The only SMS gateway provider implemented is [CM.com](https://www.cm.com/about-cm/) so you need a registered account and a minimum balance required for the Messaging gateway channel. If you don't want/need classic mobile messages, you can disable it in the configuration file and exclusively use a Gotify Gateway that you can even self-host and get notified via Android App.
 
 ## Limitations
 
@@ -45,3 +45,5 @@ Some shortcuts have been taken on purpose while developing this proxy applicatio
 - [CM Text SDK](https://github.com/cmdotcom/text-sdk-dotnet)
 - [MimeKit](https://github.com/jstedfast/MimeKit)
 - [SmtpServer](https://github.com/cosullivan/SmtpServer)
+- [Tiny.RestClient](https://github.com/jgiacomini/Tiny.RestClient)
+- [Gotify](https://gotify.net/)
