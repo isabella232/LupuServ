@@ -10,7 +10,7 @@ namespace LupuServ.Util
         /// <summary>
         ///     Gets the Zone ID (Sensor number).
         /// </summary>
-        public int ZoneId { get; }
+        public int? ZoneId { get; }
 
         /// <summary>
         ///     Gets the sensor name.
@@ -24,7 +24,9 @@ namespace LupuServ.Util
 
         public string Template { get; }
 
-        private static readonly Regex Pattern = new(@"Zone\:(\d) (.*), (.*)");
+        private static readonly Regex StatusPattern = new(@"Zone\:(\d) (.*), (.*)");
+        
+        private static readonly Regex ArmPattern = new(@"(.*), (Arm|Disarm)$");
 
         private MessagePacket(int zoneId, string sensorName, string eventMessage, string template)
         {
@@ -47,7 +49,7 @@ namespace LupuServ.Util
         /// <returns>The decoded <see cref="MessagePacket"/>.</returns>
         public static MessagePacket DecodeFrom(string content, string template)
         {
-            var match = Pattern.Match(content);
+            var match = StatusPattern.Match(content);
 
             return new MessagePacket(
                 int.Parse(match.Groups[1].Value),

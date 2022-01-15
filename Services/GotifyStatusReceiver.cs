@@ -16,31 +16,38 @@ namespace LupuServ.Services
 
         private readonly TinyRestClient _restClient;
 
+        private readonly IConfigurationSection _section;
+
         public GotifyStatusReceiver(IConfiguration config, ILogger<GotifyStatusReceiver> logger,
             TinyRestClient restClient)
         {
             _config = config;
             _logger = logger;
             _restClient = restClient;
+
+            _section = _config.GetRequiredSection("Gotify:Status");
         }
 
         public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
         {
+            if (!bool.TryParse(_section.GetSection("IsEnabled")?.Value, out var isEnabled) || !isEnabled)
+                return;
+
             _logger.LogInformation("Processing message to deliver via Gotify");
 
             try
             {
-                var token = _config.GetSection("Gotify:Status:AppToken").Value;
-                var title = _config.GetSection("Gotify:Status:Title").Value;
-                var priority = _config.GetSection("Gotify:Status:Priority").Value;
+                var token = _section.GetSection("AppToken").Value;
+                var title = _section.GetSection("Title").Value;
+                var priority = _section.GetSection("Priority").Value;
 
-                var request = await _restClient.PostRequest($"message?token={token}")
+                var response = await _restClient.PostRequest($"message?token={token}")
                     .AddFormParameter("priority", priority)
                     .AddFormParameter("title", title)
                     .AddFormParameter("message", message.ToString())
                     .ExecuteAsync<GotifyResponse>(cancellationToken);
 
-                _logger.LogInformation("Request result: {0}", request);
+                _logger.LogInformation("Request result: {Response}", response);
             }
             catch (Exception ex)
             {

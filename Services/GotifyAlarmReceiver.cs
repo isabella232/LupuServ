@@ -16,23 +16,30 @@ namespace LupuServ.Services
 
         private readonly TinyRestClient _restClient;
 
+        private readonly IConfigurationSection _section;
+
         public GotifyAlarmReceiver(IConfiguration config, ILogger<GotifyAlarmReceiver> logger,
             TinyRestClient restClient)
         {
             _config = config;
             _logger = logger;
             _restClient = restClient;
+
+            _section = _config.GetRequiredSection("Gotify:Alarm");
         }
 
         public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
         {
+            if (!bool.TryParse(_section.GetSection("IsEnabled")?.Value, out var isEnabled) || !isEnabled)
+                return;
+
             _logger.LogInformation("Processing alarm message to deliver via Gotify");
 
             try
             {
-                var token = _config.GetSection("Gotify:Alarm:AppToken").Value;
-                var title = _config.GetSection("Gotify:Alarm:Title").Value;
-                var priority = _config.GetSection("Gotify:Alarm:Priority").Value;
+                var token = _section.GetSection("AppToken").Value;
+                var title = _section.GetSection("Title").Value;
+                var priority = _section.GetSection("Priority").Value;
 
                 var request = await _restClient.PostRequest($"message?token={token}")
                     .AddFormParameter("priority", priority)
