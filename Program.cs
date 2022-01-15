@@ -8,7 +8,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 using Tiny.RestClient;
 
 namespace LupuServ
@@ -22,11 +21,16 @@ namespace LupuServ
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile(
+                    $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
+                    true)
+                .Build();
+
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
+                .ReadFrom.Configuration(configuration)
                 .CreateLogger();
 
             CreateHostBuilder(args).UseSerilog().Build().Run();
@@ -40,7 +44,7 @@ namespace LupuServ
                     services.AddScoped(provider =>
                     {
                         var endpoint = provider.GetRequiredService<IConfiguration>().GetSection("Gotify:Url").Value;
-                        
+
                         return new TinyRestClient(new HttpClient(), endpoint);
                     });
 
