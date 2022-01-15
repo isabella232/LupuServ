@@ -2,15 +2,54 @@
 
 namespace LupuServ.Util
 {
-    /// <summary>
-    ///     Decodes a status message received from Alarm Centre.
-    /// </summary>
-    internal sealed class MessagePacket
+    internal interface IMessagePacket
+    {
+        public string MessageText { get; }
+
+        public string Template { get; }
+    }
+
+    internal abstract class MessagePacketBase : IMessagePacket
+    {
+        public abstract string MessageText { get; }
+
+        public abstract string Template { get; }
+
+        private static readonly Regex StatusPattern = new(@"Zone\:(\d) (.*), (.*)");
+
+        private static readonly Regex ArmPattern = new(@"(.*), (Arm|Disarm)$");
+
+        public static IMessagePacket DecodeFrom(string content, string template)
+        {
+            var statusMatch = StatusPattern.Match(content);
+
+            if (statusMatch.Success)
+                return new StatusMessage(
+                    int.Parse(statusMatch.Groups[1].Value),
+                    statusMatch.Groups[2].Value,
+                    statusMatch.Groups[3].Value,
+                    template
+                );
+
+            var armMatch = ArmPattern.Match(content);
+
+            if (armMatch.Success)
+                return new ArmStatusMessage(
+                    armMatch.Groups[1].Value,
+                    armMatch.Groups[2].Value,
+                    template
+                );
+
+            return null;
+        }
+    }
+
+    internal sealed class StatusMessage : MessagePacketBase
     {
         /// <summary>
         ///     Gets the Zone ID (Sensor number).
         /// </summary>
-        public int? ZoneId { get; }
+        public int ZoneId { get; }
 
         /// <summary>
         ///     Gets the sensor name.
@@ -22,13 +61,9 @@ namespace LupuServ.Util
         /// </summary>
         public string EventMessage { get; }
 
-        public string Template { get; }
+        public override string Template { get; }
 
-        private static readonly Regex StatusPattern = new(@"Zone\:(\d) (.*), (.*)");
-        
-        private static readonly Regex ArmPattern = new(@"(.*), (Arm|Disarm)$");
-
-        private MessagePacket(int zoneId, string sensorName, string eventMessage, string template)
+        public StatusMessage(int zoneId, string sensorName, string eventMessage, string template)
         {
             ZoneId = zoneId;
             SensorName = sensorName;
@@ -36,27 +71,27 @@ namespace LupuServ.Util
             Template = template;
         }
 
-        public override string ToString()
+        public override string MessageText => string.Format(Template, ZoneId, SensorName, EventMessage);
+    }
+
+    internal sealed class ArmStatusMessage : MessagePacketBase
+    {
+        public ArmStatusMessage(string user, string eventMessage, string template)
         {
-            return string.Format(Template, ZoneId, SensorName, EventMessage);
+            User = user;
+            EventMessage = eventMessage;
+            Template = template;
         }
+
+        public string User { get; }
 
         /// <summary>
-        ///     Decodes a received string message into individual message components.
+        ///     Gets the event message content.
         /// </summary>
-        /// <param name="content">The source message text.</param>
-        /// <param name="template">The template to use to create a human readable string.</param>
-        /// <returns>The decoded <see cref="MessagePacket"/>.</returns>
-        public static MessagePacket DecodeFrom(string content, string template)
-        {
-            var match = StatusPattern.Match(content);
+        public string EventMessage { get; }
 
-            return new MessagePacket(
-                int.Parse(match.Groups[1].Value),
-                match.Groups[2].Value,
-                match.Groups[3].Value,
-                template
-            );
-        }
+        public override string MessageText => string.Format(Template, User, EventMessage);
+
+        public override string Template { get; }
     }
 }

@@ -6,6 +6,6 @@ namespace LupuServ.Services
 {
     internal interface IAlarmReceiver
     {
-        Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default);
+        Task ProcessMessageAsync(IMessagePacket message, CancellationToken cancellationToken = default);
     }
 }

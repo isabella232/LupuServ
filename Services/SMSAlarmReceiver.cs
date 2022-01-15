@@ -24,7 +24,7 @@ namespace LupuServ.Services
             _logger = logger;
         }
 
-        public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
+        public async Task ProcessMessageAsync(IMessagePacket message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -40,7 +40,7 @@ namespace LupuServ.Services
                 var client = new TextClient(apiKey);
 
                 var result = await client
-                    .SendMessageAsync(message.ToString(), from, recipients, "Alarm", cancellationToken)
+                    .SendMessageAsync(message.MessageText, from, recipients, "Alarm", cancellationToken)
                     .ConfigureAwait(false);
 
                 if (result.statusCode == TextClientStatusCode.Ok)

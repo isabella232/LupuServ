@@ -28,7 +28,7 @@ namespace LupuServ.Services
             _section = _config.GetRequiredSection("Gotify:Alarm");
         }
 
-        public async Task ProcessMessageAsync(MessagePacket message, CancellationToken cancellationToken = default)
+        public async Task ProcessMessageAsync(IMessagePacket message, CancellationToken cancellationToken = default)
         {
             if (!bool.TryParse(_section.GetSection("IsEnabled")?.Value, out var isEnabled) || !isEnabled)
                 return;
@@ -44,7 +44,7 @@ namespace LupuServ.Services
                 var request = await _restClient.PostRequest($"message?token={token}")
                     .AddFormParameter("priority", priority)
                     .AddFormParameter("title", title)
-                    .AddFormParameter("message", message.ToString())
+                    .AddFormParameter("message", message.MessageText)
                     .ExecuteAsync<GotifyResponse>(cancellationToken);
 
                 _logger.LogInformation("Request result: {0}", request);
